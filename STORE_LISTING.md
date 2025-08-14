@@ -73,7 +73,9 @@ Transform your browsing experience with instant voice translation! Our Chrome ex
 - Refined user interface
 
 **Support & Feedback:**
-Having issues or suggestions? We'd love to hear from you! Contact us through our support channels.
+Having issues or suggestions? We'd love to hear from you!
+- GitHub Issues: [https://github.com/geonook/voice-translator/issues](https://github.com/geonook/voice-translator/issues)
+- Repository: [https://github.com/geonook/voice-translator](https://github.com/geonook/voice-translator)
 
 ---
 *Voice Translator respects your privacy. All voice processing happens locally, and only translated text is sent to OpenAI using your personal API key.*
