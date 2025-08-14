@@ -1,0 +1,36 @@
+{
+  "$schema": "https://zeabur.com/schema.json",
+  "name": "voice-translator",
+  "services": [
+    {
+      "name": "voice-translator-web",
+      "type": "nodejs",
+      "buildCommand": "npm install",
+      "startCommand": "npm start",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": "3000"
+      },
+      "ports": [
+        {
+          "port": 3000,
+          "type": "http"
+        }
+      ],
+      "healthCheck": {
+        "path": "/api/health",
+        "timeout": 10
+      },
+      "resources": {
+        "cpu": "0.5",
+        "memory": "512Mi"
+      }
+    }
+  ],
+  "domains": [
+    {
+      "domain": "voice-translator.zeabur.app",
+      "service": "voice-translator-web"
+    }
+  ]
+}

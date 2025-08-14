@@ -33,36 +33,59 @@ class RealtimeTranslationService {
     async displaySystemInfo() {
         try {
             const info = [];
-            info.push('Environment: Zeabur Deployment');
-            info.push('Protocol: ' + location.protocol);
-            info.push('HTTPS: ' + (location.protocol === 'https:' ? 'Yes' : 'No'));
-            info.push('getUserMedia: ' + (navigator.mediaDevices?.getUserMedia ? 'Supported' : 'Not supported'));
+            info.push('🚀 Platform: Zeabur Cloud Deployment');
+            info.push('🌐 Protocol: ' + location.protocol);
+            info.push('🔒 HTTPS: ' + (location.protocol === 'https:' ? '✅ Enabled' : '❌ Not available'));
+            info.push('🎤 getUserMedia: ' + (navigator.mediaDevices?.getUserMedia ? '✅ Supported' : '❌ Not supported'));
             
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            info.push('Speech Recognition: ' + (SpeechRecognition ? 'Supported' : 'Not supported'));
+            info.push('🗣️ Speech Recognition: ' + (SpeechRecognition ? '✅ Supported' : '❌ Not supported'));
             
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const audioInputs = devices.filter(d => d.kind === 'audioinput');
-                info.push('Audio Devices: ' + audioInputs.length + ' detected');
+                info.push('🔊 Audio Devices: ' + audioInputs.length + ' detected');
             } catch (e) {
-                info.push('Audio Devices: ' + (location.protocol === 'https:' ? 'Permission needed' : 'HTTPS required'));
+                info.push('🔊 Audio Devices: ' + (location.protocol === 'https:' ? '⏳ Permission needed' : '⚠️ HTTPS required'));
             }
             
-            // Check health status
+            // Check health and server info
             try {
-                const response = await fetch('/api/health');
-                const health = await response.json();
-                info.push('Server Status: ' + health.status);
-                info.push('Server Time: ' + new Date(health.timestamp).toLocaleTimeString());
+                const [healthResponse, infoResponse] = await Promise.all([
+                    fetch('/api/health'),
+                    fetch('/api/info')
+                ]);
+                
+                if (healthResponse.ok) {
+                    const health = await healthResponse.json();
+                    info.push('💚 Server Status: ' + health.status.toUpperCase());
+                    info.push('⏰ Server Time: ' + new Date(health.timestamp).toLocaleTimeString());
+                    info.push('🖥️ Node Version: ' + health.node_version);
+                    info.push('⚡ Uptime: ' + Math.floor(health.uptime / 60) + ' minutes');
+                    
+                    const memUsage = health.memory_usage;
+                    const memMB = Math.round(memUsage.used / 1024 / 1024);
+                    info.push('💾 Memory Usage: ' + memMB + ' MB');
+                }
+                
+                if (infoResponse.ok) {
+                    const serviceInfo = await infoResponse.json();
+                    info.push('📋 Service: ' + serviceInfo.service + ' v' + serviceInfo.version);
+                    info.push('🌍 Supported Languages: ' + serviceInfo.supported_languages.source.length + ' source, ' + serviceInfo.supported_languages.target.length + ' target');
+                }
+                
             } catch (e) {
-                info.push('Server Status: Unable to connect');
+                info.push('❌ Server Status: Unable to connect');
             }
+            
+            // Add browser info
+            info.push('🌐 Browser: ' + navigator.userAgent.split(' ').slice(-1)[0]);
+            info.push('📱 Mobile: ' + (/Mobi|Android/i.test(navigator.userAgent) ? 'Yes' : 'No'));
             
             this.systemInfo.textContent = info.join('\n');
             
         } catch (error) {
-            this.systemInfo.textContent = 'System info unavailable: ' + error.message;
+            this.systemInfo.textContent = '❌ System info unavailable: ' + error.message;
         }
     }
 

@@ -1,0 +1,17 @@
+# 環境配置範例檔案
+# 在 Zeabur 控制台中設置這些環境變數
+
+# 應用程式環境
+NODE_ENV=production
+
+# 伺服器端口 (Zeabur 會自動設置)
+PORT=3000
+
+# OpenAI API 配置 (在前端介面中設置，此處僅作參考)
+# OPENAI_API_KEY=sk-your-api-key-here
+# OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+
+# Zeabur 部署配置
+# 這些通常由 Zeabur 自動管理
+# ZEABUR_DOMAIN=voice-translator.zeabur.app
+# ZEABUR_URL=https://voice-translator.zeabur.app
