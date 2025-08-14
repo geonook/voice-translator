@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡單麥克風測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 麥克風權限測試</h1>
+        <p>這個簡單測試會幫你確認麥克風權限是否正常</p>
+        
+        <button onclick="testMicrophone()">測試麥克風權限</button>
+        
+        <div id="status" class="status info">
+            點擊上方按鈕開始測試
+        </div>
+        
+        <div id="details" style="font-family: monospace; font-size: 12px; text-align: left; margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+        
+        function addDetail(message) {
+            const details = document.getElementById('details');
+            const time = new Date().toLocaleTimeString();
+            details.innerHTML += `[${time}] ${message}<br>`;
+        }
+
+        async function testMicrophone() {
+            updateStatus('正在測試麥克風權限...', 'info');
+            addDetail('開始測試麥克風權限');
+            
+            try {
+                // 檢查基本支援
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('瀏覽器不支援 getUserMedia API');
+                }
+                
+                addDetail('✅ 瀏覽器支援 getUserMedia API');
+                
+                // 請求麥克風權限
+                updateStatus('請求麥克風權限中...（請在彈出對話框中點擊允許）', 'info');
+                addDetail('發送麥克風權限請求...');
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: true 
+                });
+                
+                addDetail('✅ 成功獲得麥克風權限');
+                updateStatus('✅ 麥克風權限測試成功！', 'success');
+                
+                // 顯示音軌資訊
+                const audioTracks = stream.getAudioTracks();
+                addDetail(`📊 找到 ${audioTracks.length} 個音軌`);
+                
+                audioTracks.forEach((track, index) => {
+                    addDetail(`🎵 音軌 ${index + 1}: ${track.label || '未知設備'}`);
+                    addDetail(`   狀態: ${track.readyState}, 啟用: ${track.enabled}`);
+                });
+                
+                // 停止串流
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                    addDetail('🔚 關閉音軌: ' + (track.label || '未知'));
+                });
+                
+                addDetail('✅ 測試完成 - 麥克風功能正常');
+                
+            } catch (error) {
+                console.error('麥克風測試失敗:', error);
+                addDetail('❌ 錯誤: ' + error.message);
+                
+                let errorMessage = '麥克風測試失敗: ';
+                let solution = '';
+                
+                switch (error.name) {
+                    case 'NotAllowedError':
+                        errorMessage += '權限被拒絕';
+                        solution = '解決方法：點擊網址列左側圖示，允許麥克風權限';
+                        break;
+                    case 'NotFoundError':
+                        errorMessage += '找不到麥克風設備';
+                        solution = '解決方法：檢查麥克風是否正確連接';
+                        break;
+                    case 'NotSupportedError':
+                        errorMessage += '瀏覽器不支援';
+                        solution = '解決方法：使用 Chrome、Edge 或 Safari 瀏覽器';
+                        break;
+                    case 'SecurityError':
+                        errorMessage += '安全性錯誤';
+                        solution = '解決方法：確保使用 HTTPS 或 localhost';
+                        break;
+                    default:
+                        errorMessage += error.message;
+                        solution = '解決方法：檢查瀏覽器和系統麥克風設定';
+                }
+                
+                updateStatus(errorMessage, 'error');
+                addDetail('💡 ' + solution);
+            }
+        }
+        
+        // 頁面載入時顯示基本資訊
+        window.addEventListener('load', () => {
+            addDetail('頁面載入完成');
+            addDetail('協議: ' + location.protocol);
+            addDetail('主機: ' + location.hostname);
+            addDetail('瀏覽器: ' + navigator.userAgent.split(' ').pop());
+            
+            if (location.protocol === 'https:' || location.hostname === 'localhost') {
+                addDetail('✅ 安全連線 - 可以使用麥克風');
+            } else {
+                addDetail('⚠️ 非安全連線 - 可能無法使用麥克風');
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create PNG Icons for Chrome Web Store</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .icon-container { margin: 20px 0; }
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        button { padding: 10px 20px; margin: 5px; background: #4285f4; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #3367d6; }
+    </style>
+</head>
+<body>
+    <h1>Chrome Web Store Icon Generator</h1>
+    <p>This tool will generate PNG icons required for Chrome Web Store submission.</p>
+    
+    <div class="icon-container">
+        <h3>Extension Icons (Required)</h3>
+        <canvas id="icon16" width="16" height="16"></canvas>
+        <canvas id="icon48" width="48" height="48"></canvas>
+        <canvas id="icon128" width="128" height="128"></canvas>
+        <br>
+        <button onclick="generateIcons()">Generate Extension Icons</button>
+        <button onclick="downloadIcon('icon16')">Download 16x16</button>
+        <button onclick="downloadIcon('icon48')">Download 48x48</button>
+        <button onclick="downloadIcon('icon128')">Download 128x128</button>
+    </div>
+
+    <div class="icon-container">
+        <h3>Web Store Listing Images (Required)</h3>
+        <canvas id="store128" width="128" height="128"></canvas>
+        <canvas id="store440" width="440" height="280"></canvas>
+        <canvas id="store920" width="920" height="680"></canvas>
+        <canvas id="store1400" width="1400" height="560"></canvas>
+        <br>
+        <button onclick="generateStoreImages()">Generate Store Images</button>
+        <button onclick="downloadIcon('store128')">Download Store Icon 128x128</button>
+        <button onclick="downloadIcon('store440')">Download Small Tile 440x280</button>
+        <button onclick="downloadIcon('store920')">Download Large Tile 920x680</button>
+        <button onclick="downloadIcon('store1400')">Download Marquee 1400x560</button>
+    </div>
+
+    <script>
+        function createGradient(ctx, width, height) {
+            const gradient = ctx.createLinearGradient(0, 0, width, height);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            return gradient;
+        }
+
+        function drawIcon(canvasId, size, showText = true) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background with gradient
+            const gradient = createGradient(ctx, canvas.width, canvas.height);
+            ctx.fillStyle = gradient;
+            
+            // Rounded rectangle
+            const radius = Math.min(canvas.width, canvas.height) * 0.125;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, canvas.width, canvas.height, radius);
+            ctx.fill();
+            
+            if (showText) {
+                // Draw microphone emoji
+                ctx.fillStyle = 'white';
+                ctx.font = `${size * 0.6}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🎤', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        function drawStoreImage(canvasId, width, height, title) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw background
+            const gradient = createGradient(ctx, width, height);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw main icon
+            const iconSize = Math.min(width, height) * 0.3;
+            ctx.fillStyle = 'white';
+            ctx.font = `${iconSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            if (width > height) {
+                // Horizontal layout
+                ctx.fillText('🎤', width * 0.25, height / 2);
+                
+                // Title
+                ctx.font = `${height * 0.12}px Arial`;
+                ctx.fillText('Voice Translator', width * 0.65, height * 0.4);
+                ctx.font = `${height * 0.08}px Arial`;
+                ctx.fillText('Real-time AI Translation', width * 0.65, height * 0.6);
+            } else {
+                // Vertical layout
+                ctx.fillText('🎤', width / 2, height * 0.3);
+                
+                // Title
+                ctx.font = `${width * 0.08}px Arial`;
+                ctx.fillText('Voice Translator', width / 2, height * 0.6);
+                ctx.font = `${width * 0.05}px Arial`;
+                ctx.fillText('Real-time AI Translation', width / 2, height * 0.75);
+            }
+        }
+
+        function generateIcons() {
+            drawIcon('icon16', 16);
+            drawIcon('icon48', 48);
+            drawIcon('icon128', 128);
+        }
+
+        function generateStoreImages() {
+            drawIcon('store128', 128);
+            drawStoreImage('store440', 440, 280, 'Small Tile');
+            drawStoreImage('store920', 920, 680, 'Large Tile');
+            drawStoreImage('store1400', 1400, 560, 'Marquee');
+        }
+
+        function downloadIcon(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = `${canvasId}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Generate icons on page load
+        window.onload = function() {
+            generateIcons();
+            generateStoreImages();
+        };
+    </script>
+</body>
+</html>

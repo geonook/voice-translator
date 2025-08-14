@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Translator</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Voice Translator</h1>
+        </div>
+
+        <div class="config-section">
+            <div class="input-group">
+                <label for="apiKey">OpenAI API Key:</label>
+                <input type="password" id="apiKey" placeholder="sk-..." required>
+                <button id="saveApiKey" class="btn btn-save">Save</button>
+            </div>
+            <div class="input-group">
+                <label for="modelSelect">AI Model:</label>
+                <select id="modelSelect">
+                    <option value="gpt-4o-mini">GPT-4o Mini (Recommended)</option>
+                    <option value="gpt-4o">GPT-4o (Best Quality)</option>
+                    <option value="gpt-4-turbo-preview">GPT-4 Turbo</option>
+                    <option value="gpt-4">GPT-4</option>
+                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fastest)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="language-section">
+            <div class="language-selector">
+                <div class="input-group">
+                    <label for="sourceLanguage">Source Language:</label>
+                    <select id="sourceLanguage">
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="zh-CN">简体中文</option>
+                        <option value="en-US">English</option>
+                        <option value="ja-JP">日本語</option>
+                        <option value="ko-KR">한국어</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="targetLanguage">Target Language:</label>
+                    <select id="targetLanguage">
+                        <option value="English">English</option>
+                        <option value="Traditional Chinese">繁體中文</option>
+                        <option value="Simplified Chinese">简体中文</option>
+                        <option value="Japanese">日本語</option>
+                        <option value="Korean">한국어</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn btn-start" disabled>
+                🎤 Start Translation
+            </button>
+            <button id="stopBtn" class="btn btn-stop" disabled>
+                ⏹️ Stop Translation
+            </button>
+        </div>
+
+        <div class="status" id="status">
+            Please enter OpenAI API Key first
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-value" id="translationCount">0</span>
+                <span class="stat-label">Translations</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="sessionTime">00:00</span>
+                <span class="stat-label">Usage Time</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="toggle-subtitle">
+                <label>
+                    <input type="checkbox" id="showSubtitle" checked>
+                    Show subtitles on webpage
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+/* Voice Translator 字幕樣式 */
+#voice-translator-subtitle {
+    /* 基本樣式已在 content.js 中內聯定義 */
+    /* 這裡可以添加額外的樣式覆蓋 */
+}
+
+/* 確保字幕不會被網頁樣式影響 */
+#voice-translator-subtitle * {
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    #voice-translator-subtitle {
+        max-width: 95% !important;
+        min-width: 280px !important;
+        font-size: 14px !important;
+        padding: 12px 16px !important;
+    }
+}
+
+/* 高對比度模式支援 */
+@media (prefers-contrast: high) {
+    #voice-translator-subtitle {
+        background: rgba(0, 0, 0, 0.95) !important;
+        border: 2px solid white !important;
+    }
+}
+
+/* 減少動畫模式支援 */
+@media (prefers-reduced-motion: reduce) {
+    #voice-translator-subtitle {
+        animation: none !important;
+    }
+    
+    .voice-translator-hide {
+        animation: none !important;
+        display: none !important;
+    }
+}

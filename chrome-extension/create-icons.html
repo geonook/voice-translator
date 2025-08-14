@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>創建擴充套件圖示</title>
+</head>
+<body>
+    <h2>Voice Translator 圖示生成器</h2>
+    <p>請在瀏覽器中開啟此檔案，然後右鍵點擊下面的圖示並儲存為 PNG 檔案</p>
+    
+    <!-- 16x16 圖示 -->
+    <div>
+        <h3>16x16 圖示 (右鍵儲存為 icon16.png)</h3>
+        <canvas id="icon16" width="16" height="16" style="border: 1px solid #ccc; image-rendering: pixelated; width: 64px; height: 64px;"></canvas>
+    </div>
+    
+    <!-- 48x48 圖示 -->
+    <div>
+        <h3>48x48 圖示 (右鍵儲存為 icon48.png)</h3>
+        <canvas id="icon48" width="48" height="48" style="border: 1px solid #ccc; width: 96px; height: 96px;"></canvas>
+    </div>
+    
+    <!-- 128x128 圖示 -->
+    <div>
+        <h3>128x128 圖示 (右鍵儲存為 icon128.png)</h3>
+        <canvas id="icon128" width="128" height="128" style="border: 1px solid #ccc; width: 128px; height: 128px;"></canvas>
+    </div>
+
+    <script>
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // 背景漸層
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // 麥克風圖示
+            ctx.fillStyle = 'white';
+            
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const micSize = size * 0.6;
+            
+            // 麥克風主體
+            const micWidth = micSize * 0.3;
+            const micHeight = micSize * 0.4;
+            const micX = centerX - micWidth / 2;
+            const micY = centerY - micHeight / 2 - micSize * 0.1;
+            
+            ctx.beginPath();
+            ctx.roundRect(micX, micY, micWidth, micHeight, micWidth / 4);
+            ctx.fill();
+            
+            // 麥克風支架
+            const standHeight = micSize * 0.2;
+            const standY = micY + micHeight;
+            ctx.fillRect(centerX - 1, standY, 2, standHeight);
+            
+            // 麥克風底座
+            const baseWidth = micSize * 0.4;
+            const baseHeight = micSize * 0.08;
+            ctx.fillRect(centerX - baseWidth / 2, standY + standHeight, baseWidth, baseHeight);
+        }
+        
+        // 繪製所有尺寸的圖示
+        drawIcon('icon16', 16);
+        drawIcon('icon48', 48);
+        drawIcon('icon128', 128);
+        
+        // 添加右鍵儲存功能
+        ['icon16', 'icon48', 'icon128'].forEach(id => {
+            const canvas = document.getElementById(id);
+            canvas.addEventListener('contextmenu', (e) => {
+                const link = document.createElement('a');
+                link.download = id + '.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>
