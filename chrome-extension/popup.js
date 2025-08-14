@@ -24,6 +24,9 @@ class VoiceTranslatorPopup {
         this.translationCountEl = document.getElementById('translationCount');
         this.sessionTimeEl = document.getElementById('sessionTime');
         this.showSubtitleCheckbox = document.getElementById('showSubtitle');
+        this.enableRealtimeCheckbox = document.getElementById('enableRealtimeTranslation');
+        this.realtimeDelaySelect = document.getElementById('realtimeDelay');
+        this.translationSensitivitySelect = document.getElementById('translationSensitivity');
     }
 
     async loadSettings() {
@@ -34,6 +37,9 @@ class VoiceTranslatorPopup {
                 'sourceLanguage', 
                 'targetLanguage', 
                 'showSubtitle',
+                'enableRealtimeTranslation',
+                'realtimeDelay',
+                'translationSensitivity',
                 'translationCount'
             ]);
             
@@ -57,6 +63,18 @@ class VoiceTranslatorPopup {
             if (result.showSubtitle !== undefined) {
                 this.showSubtitleCheckbox.checked = result.showSubtitle;
             }
+            
+            if (result.enableRealtimeTranslation !== undefined) {
+                this.enableRealtimeCheckbox.checked = result.enableRealtimeTranslation;
+            }
+            
+            if (result.realtimeDelay) {
+                this.realtimeDelaySelect.value = result.realtimeDelay;
+            }
+            
+            if (result.translationSensitivity) {
+                this.translationSensitivitySelect.value = result.translationSensitivity;
+            }
 
             if (result.translationCount) {
                 this.translationCount = result.translationCount;
@@ -76,6 +94,9 @@ class VoiceTranslatorPopup {
                 sourceLanguage: this.sourceLanguageSelect.value,
                 targetLanguage: this.targetLanguageSelect.value,
                 showSubtitle: this.showSubtitleCheckbox.checked,
+                enableRealtimeTranslation: this.enableRealtimeCheckbox.checked,
+                realtimeDelay: this.realtimeDelaySelect.value,
+                translationSensitivity: this.translationSensitivitySelect.value,
                 translationCount: this.translationCount
             });
         } catch (error) {
@@ -130,6 +151,18 @@ class VoiceTranslatorPopup {
                 action: 'toggleSubtitle',
                 show: this.showSubtitleCheckbox.checked
             });
+        });
+
+        this.enableRealtimeCheckbox.addEventListener('change', () => {
+            this.saveSettings();
+        });
+
+        this.realtimeDelaySelect.addEventListener('change', () => {
+            this.saveSettings();
+        });
+
+        this.translationSensitivitySelect.addEventListener('change', () => {
+            this.saveSettings();
         });
 
         // Listen for messages from background script
@@ -196,7 +229,10 @@ class VoiceTranslatorPopup {
                 model: this.modelSelect.value,
                 sourceLanguage: this.sourceLanguageSelect.value,
                 targetLanguage: this.targetLanguageSelect.value,
-                showSubtitle: this.showSubtitleCheckbox.checked
+                showSubtitle: this.showSubtitleCheckbox.checked,
+                enableRealtimeTranslation: this.enableRealtimeCheckbox.checked,
+                realtimeDelay: parseInt(this.realtimeDelaySelect.value),
+                translationSensitivity: this.translationSensitivitySelect.value
             };
             
             console.log('🎤 Popup: Sending message to background with settings:', settings);
@@ -253,7 +289,6 @@ class VoiceTranslatorPopup {
         if (this.showSubtitleCheckbox.checked) {
             this.sendMessageToContentScript({
                 action: 'showTranslation',
-                original: data.original,
                 translated: data.translated,
                 sourceLanguage: this.sourceLanguageSelect.value,
                 targetLanguage: this.targetLanguageSelect.value

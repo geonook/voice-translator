@@ -155,7 +155,7 @@ class VoiceTranslatorBackground {
         }
     }
 
-    async translateText(text, sourceLanguage, targetLanguage, apiKey = null) {
+    async translateText(text, sourceLanguage, targetLanguage, apiKey = null, isInterim = false) {
         console.log('🔧 Starting translation:', { text, sourceLanguage, targetLanguage });
         
         if (!text || text.length < 2) {
@@ -193,24 +193,27 @@ class VoiceTranslatorBackground {
             console.log('🔧 ✅ CONFIRMED USING MODEL:', selectedModel);
             console.log('🔧 📝 Translation request for model:', selectedModel);
             
-            // Optimize API parameters for speed
+            // Optimize API parameters for speed - different settings for interim vs final
             const requestBody = {
                 model: selectedModel,
                 messages: [
                     {
                         role: 'system',
-                        content: `Translate ${sourceLanguage} to ${targetLanguage}:`
+                        content: isInterim 
+                            ? `Quickly translate this ${sourceLanguage} text to ${targetLanguage}. This is a partial/interim translation, focus on speed over perfection:` 
+                            : `Translate ${sourceLanguage} to ${targetLanguage}:`
                     },
                     {
                         role: 'user',
                         content: text
                     }
                 ],
-                temperature: 0,        // Minimum creativity for faster, more consistent results
-                max_tokens: 100,       // Reduced tokens for faster response
-                top_p: 1,             // Focus on most likely tokens
-                frequency_penalty: 0,  // No penalty for speed
-                presence_penalty: 0    // No penalty for speed
+                temperature: isInterim ? 0 : 0.1,        // Even lower temperature for interim translations
+                max_tokens: isInterim ? 60 : 120,        // Fewer tokens for interim to speed up response
+                top_p: 1,                                // Focus on most likely tokens
+                frequency_penalty: 0,                    // No penalty for speed
+                presence_penalty: 0,                     // No penalty for speed
+                stream: false                            // Ensure non-streaming for consistent handling
             };
             
             const finalApiKey = apiKey || this.settings.apiKey;
@@ -473,18 +476,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     message.text,
                     message.sourceLanguage,
                     message.targetLanguage,
-                    apiKey
+                    apiKey,
+                    message.isInterim
                 );
                 
                 console.log('🔧 Translation result details:', {
                     result: translationResult,
                     hasResult: !!translationResult,
                     hasTranslated: !!translationResult?.translated,
-                    translated: translationResult?.translated
+                    translated: translationResult?.translated,
+                    isInterim: message.isInterim
                 });
                 
                 if (translationResult && translationResult.translated) {
-                    const response = { success: true, data: translationResult };
+                    // 添加 isInterim 標記到回應中
+                    const response = { 
+                        success: true, 
+                        data: {
+                            ...translationResult,
+                            isInterim: message.isInterim
+                        }
+                    };
                     console.log('🔧 Sending success response:', response);
                     sendResponse(response);
                 } else {

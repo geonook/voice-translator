@@ -53,9 +53,17 @@ class VoiceTranslatorContent {
 
     createSubtitleContainer() {
         console.log('🎤 Creating subtitle container...');
+        
+        // Remove any existing subtitle containers from DOM
+        const existingContainers = document.querySelectorAll('#voice-translator-subtitle');
+        existingContainers.forEach((container, index) => {
+            console.log(`🎤 Removing existing subtitle container ${index + 1}`);
+            container.remove();
+        });
+        
         // Avoid duplicate creation
         if (this.subtitleContainer) {
-            console.log('🎤 Subtitle container already exists');
+            console.log('🎤 Subtitle container already exists in instance');
             return;
         }
 
@@ -114,52 +122,16 @@ class VoiceTranslatorContent {
         document.body.appendChild(this.subtitleContainer);
         console.log('🎤 Subtitle container added to body');
 
-        // Add CSS animations
+        // 簡化 CSS，移除動畫
         const style = document.createElement('style');
         style.textContent = `
-            @keyframes slideDown {
-                from {
-                    opacity: 0;
-                    transform: translateX(-50%) translateY(-20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateX(-50%) translateY(0);
-                }
-            }
-            
-            @keyframes slideUp {
-                from {
-                    opacity: 1;
-                    transform: translateX(-50%) translateY(0);
-                }
-                to {
-                    opacity: 0;
-                    transform: translateX(-50%) translateY(-20px);
-                }
-            }
-            
-            @keyframes pulse {
-                0% { 
-                    opacity: 0.6; 
-                    transform: translateX(-50%) translateY(0) scale(0.98); 
-                }
-                50% { 
-                    opacity: 1; 
-                    transform: translateX(-50%) translateY(0) scale(1.02); 
-                }
-                100% { 
-                    opacity: 0.6; 
-                    transform: translateX(-50%) translateY(0) scale(0.98); 
-                }
-            }
-            
             .voice-translator-hide {
-                animation: slideUp 0.3s ease-out forwards !important;
+                opacity: 0 !important;
+                transition: opacity 0.2s ease !important;
             }
             
             .voice-translator-pulse {
-                animation: pulse 1.5s ease-in-out infinite !important;
+                /* 移除脈衝動畫，保持穩定 */
             }
         `;
         document.head.appendChild(style);
@@ -179,8 +151,7 @@ class VoiceTranslatorContent {
             border-radius: 50% !important;
             z-index: 999999 !important;
             display: none !important;
-            animation: pulse 1s ease-in-out infinite !important;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5) !important;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3) !important;
         `;
         document.body.appendChild(this.listeningIndicator);
     }
@@ -247,28 +218,27 @@ class VoiceTranslatorContent {
 
             if (finalTranscript) {
                 const finalText = finalTranscript.trim();
+                console.log('🎤 Final transcript received, but skipping final translation (real-time only mode):', finalText);
                 
-                // Cancel any pending interim translation
+                // Cancel any pending interim translation since we got the final result
                 if (this.interimTranslationTimeout) {
                     clearTimeout(this.interimTranslationTimeout);
                     this.interimTranslationTimeout = null;
                 }
                 
-                // Check if we already have a translation for this exact text
-                if (this.lastInterimText === finalText && this.lastInterimTranslation) {
-                    console.log('🎤 Using cached interim translation for final result:', finalText);
-                    this.showTranslation(this.lastInterimTranslation);
-                    // Reset interim cache
-                    this.lastInterimText = null;
-                    this.lastInterimTranslation = null;
-                } else {
-                    console.log('🎤 Requesting final translation for:', finalText);
-                    this.requestTranslation(finalText);
+                // If we have a cached interim translation for similar text, show it as final
+                if (this.lastInterimText && this.isSimilarText(this.lastInterimText, finalText) && this.lastInterimTranslation) {
+                    console.log('🎤 Converting cached interim translation to final display:', finalText);
+                    const finalTranslationData = {
+                        ...this.lastInterimTranslation,
+                        isInterim: false
+                    };
+                    this.showTranslation(finalTranslationData);
                 }
             }
 
-            // Predictive translation: translate interim results if they're long enough
-            if (interimTranscript && interimTranscript.trim().length > 8) {
+            // 即時翻譯：支援長句子分段翻譯（降低門檻）
+            if (interimTranscript && interimTranscript.trim().length > 5) {
                 const interimText = interimTranscript.trim();
                 
                 // Cancel previous interim translation
@@ -276,11 +246,54 @@ class VoiceTranslatorContent {
                     clearTimeout(this.interimTranslationTimeout);
                 }
                 
+                // 智能觸發條件：
+                // 1. 文字長度達到一定程度
+                // 2. 包含自然的句子結構（標點符號或連接詞）
+                // 3. 時間間隔達到閾值
+                // 檢查是否啟用即時翻譯
+                if (!this.settings.enableRealtimeTranslation) {
+                    return; // 如果沒有啟用即時翻譯，只等待最終結果
+                }
+                
+                const shouldTranslateImmediately = this.shouldTriggerTranslation(interimText);
+                
+                // 針對長句子優化的延遲策略
+                let delay;
+                if (shouldTranslateImmediately) {
+                    // 立即翻譯：短延遲
+                    delay = 200;
+                } else {
+                    // 等待更多文字：根據文字長度動態調整延遲
+                    const baseDelay = this.settings.realtimeDelay || 600;
+                    delay = Math.max(400, Math.min(baseDelay, 800 - interimText.length * 10));
+                }
+                
+                console.log(`🎤 Translation delay set to ${delay}ms for text length ${interimText.length}`);
+                
+                // 不顯示聆聽文字，保持字幕區域乾淨
+                // this.showListeningText(interimText);
+                
                 // Debounce interim translation to avoid too many API calls
                 this.interimTranslationTimeout = setTimeout(() => {
-                    console.log('🎤 Starting predictive translation for:', interimText);
+                    // 針對長句子的漸進翻譯策略
+                    if (this.lastInterimText) {
+                        // 如果新文字只是舊文字的小幅延伸（少於5個字），跳過
+                        const extension = interimText.length - this.lastInterimText.length;
+                        if (interimText.includes(this.lastInterimText) && extension < 5) {
+                            console.log('🎤 Skipping - minimal extension:', interimText);
+                            return;
+                        }
+                        
+                        // 對於長句子，允許更頻繁的翻譯（每增加10+字符就翻譯）
+                        if (interimText.includes(this.lastInterimText) && extension < 10 && interimText.length < 30) {
+                            console.log('🎤 Skipping - waiting for more significant content:', interimText);
+                            return;
+                        }
+                    }
+                    
+                    console.log(`🎤 Starting real-time translation for:`, interimText);
                     this.requestTranslation(interimText, true); // true = interim
-                }, 800); // Wait 800ms for more speech
+                }, delay);
             }
         };
 
@@ -464,9 +477,124 @@ class VoiceTranslatorContent {
 
 
 
+    // 判斷兩個文字是否相似（用於緩存比較）
+    isSimilarText(text1, text2) {
+        if (!text1 || !text2) return false;
+        
+        // 移除標點符號和空白，轉為小寫進行比較
+        const normalize = (text) => text.replace(/[^\w\u4e00-\u9fff]/g, '').toLowerCase();
+        const norm1 = normalize(text1);
+        const norm2 = normalize(text2);
+        
+        // 如果完全相同
+        if (norm1 === norm2) return true;
+        
+        // 如果一個是另一個的子字串或超集（長度差異在20%以內）
+        const lengthDiff = Math.abs(norm1.length - norm2.length);
+        const maxLength = Math.max(norm1.length, norm2.length);
+        const lengthRatio = lengthDiff / maxLength;
+        
+        if (lengthRatio <= 0.2) {
+            // 檢查較短的文字是否包含在較長的文字中
+            const shorter = norm1.length <= norm2.length ? norm1 : norm2;
+            const longer = norm1.length > norm2.length ? norm1 : norm2;
+            return longer.includes(shorter);
+        }
+        
+        return false;
+    }
+
+    // 智能判斷是否應該立即觸發翻譯（針對長句子優化）
+    shouldTriggerTranslation(text) {
+        // 長句子分段翻譯策略
+        
+        // 1. 基本長度檢查 - 降低門檻以支援更頻繁的翻譯
+        if (text.length > 12) {
+            
+            // 2. 檢查是否包含自然的停頓點（適合分段翻譯）
+            const naturalBreakPoints = /[，、；：。！？\,\;\:\.\!\?]|而且|但是|然後|接著|另外|此外|因此|所以|不過|而|和|與|或|以及/;
+            if (naturalBreakPoints.test(text)) {
+                console.log('🎤 Natural break point found, triggering translation:', text);
+                return true;
+            }
+            
+            // 3. 長句子分段策略 - 每15-20字翻譯一次
+            if (text.length >= 15 && text.length % 15 < 5) {
+                console.log('🎤 Long sentence segment reached, triggering translation:', text);
+                return true;
+            }
+            
+            // 4. 檢查是否包含完整的語義單元
+            const semanticUnits = /(.*)(的時候|的話|之後|之前|以來|開始|結束|完成|進行|處理|執行|實現|達到|獲得|提供|支援|包含|具有|屬於|關於|對於|根據|通過|透過)/;
+            if (semanticUnits.test(text)) {
+                console.log('🎤 Semantic unit completed, triggering translation:', text);
+                return true;
+            }
+        }
+        
+        // 5. 超長句子強制分段（避免單句過長）
+        if (text.length > 40) {
+            console.log('🎤 Very long sentence, forcing translation:', text);
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // 顯示正在聆聽的文字（灰色顯示，表示還未翻譯）
+    showListeningText(text) {
+        if (!this.showSubtitle || !this.subtitleContainer) return;
+        
+        // 移除之前的聆聽文字
+        const existingListeningText = this.subtitleContainer.querySelector('.listening-text');
+        if (existingListeningText) {
+            existingListeningText.remove();
+        }
+        
+        // 創建新的聆聽文字元素
+        const listeningDiv = document.createElement('div');
+        listeningDiv.className = 'listening-text';
+        listeningDiv.style.cssText = `
+            color: #888 !important; 
+            font-size: 16px !important; 
+            margin-bottom: 8px !important; 
+            opacity: 0.8 !important;
+            padding: 8px 12px !important;
+            background: rgba(0,0,0,0.3) !important;
+            border-radius: 6px !important;
+            border-left: 3px solid #888 !important;
+        `;
+        listeningDiv.innerHTML = `🎤`;
+        
+        // 檢查是否已有字幕容器內容
+        if (this.subtitleContainer.children.length === 0) {
+            // 如果沒有現有內容，創建基本結構
+            this.subtitleContainer.innerHTML = `
+                <button style="position: absolute; top: 8px; right: 12px; background: none; border: none; color: rgba(255, 255, 255, 0.7); font-size: 16px; cursor: pointer; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;">✕</button>
+            `;
+            
+            // 重新綁定關閉按鈕事件
+            const closeButton = this.subtitleContainer.querySelector('button');
+            closeButton.addEventListener('click', () => {
+                this.hideSubtitle();
+            });
+        }
+        
+        // 將聆聽文字插入到字幕容器的開頭（關閉按鈕之後）
+        this.subtitleContainer.insertBefore(listeningDiv, this.subtitleContainer.children[1] || null);
+        
+        this.subtitleContainer.style.display = 'block';
+    }
+
     async requestTranslation(text, isInterim = false) {
         try {
             console.log(`🔄 Requesting ${isInterim ? 'predictive' : 'final'} translation for:`, text);
+            
+            // 對於 interim 翻譯，檢查是否已經有相同的翻譯正在處理
+            if (isInterim && this.lastInterimText === text) {
+                console.log('🔄 Skipping duplicate interim translation request for:', text);
+                return;
+            }
             
             // Cancel any existing translation request if this is a final one
             if (!isInterim && this.currentTranslationAbortController) {
@@ -525,27 +653,50 @@ class VoiceTranslatorContent {
         if (!this.showSubtitle || !this.subtitleContainer) {
             return;
         }
+        
+        // 確保 DOM 中只有一個字幕容器
+        const allSubtitleContainers = document.querySelectorAll('#voice-translator-subtitle');
+        if (allSubtitleContainers.length > 1) {
+            console.log('🎤 Found multiple subtitle containers, removing duplicates...');
+            // 保留第一個，移除其他的
+            for (let i = 1; i < allSubtitleContainers.length; i++) {
+                allSubtitleContainers[i].remove();
+            }
+            // 確保我們的實例指向正確的容器
+            this.subtitleContainer = allSubtitleContainers[0];
+        }
 
         const isSystemMessage = data.model === 'system';
         const isListening = data.translated && data.translated.includes('Listening');
+        const isInterim = data.isInterim === true;
+        
+        // 清除之前的聆聽文字
+        const existingListeningText = this.subtitleContainer.querySelector('.listening-text');
+        if (existingListeningText) {
+            existingListeningText.remove();
+        }
         
         // Show model info only for real translations, not system messages
-        const modelInfo = (data.model && !isSystemMessage) ? `<div style="color: rgba(255, 255, 255, 0.5); font-size: 11px; text-align: right; margin-bottom: 4px;">${data.model}</div>` : '';
+        const modelInfo = (data.model && !isSystemMessage) ? `<div style="color: rgba(255, 255, 255, 0.5); font-size: 11px; text-align: right; margin-bottom: 4px;">${data.model}${isInterim ? ' (即時)' : ''}</div>` : '';
+        
+        // 簡化樣式，減少視覺干擾
+        const translationStyle = isInterim 
+            ? 'color: #E6E6FA; font-size: 18px; font-weight: 400; text-align: center; padding: 8px 0; opacity: 0.95;'
+            : 'color: white; font-size: 20px; font-weight: 500; text-align: center; padding: 8px 0;';
+        
+        const translationPrefix = isInterim ? '⚡ ' : '';
         
         this.subtitleContainer.innerHTML = `
             <button style="position: absolute; top: 8px; right: 12px; background: none; border: none; color: rgba(255, 255, 255, 0.7); font-size: 16px; cursor: pointer; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;">✕</button>
             ${modelInfo}
-            <div style="color: white; font-size: 20px; font-weight: 500; text-align: center; padding: 8px 0;">
-                ${data.translated}
+            <div style="${translationStyle}">
+                ${translationPrefix}${data.translated}
             </div>
         `;
 
-        // Add pulse effect for listening status
-        if (isListening) {
-            this.subtitleContainer.classList.add('voice-translator-pulse');
-        } else {
-            this.subtitleContainer.classList.remove('voice-translator-pulse');
-        }
+        // 移除所有動畫效果，保持穩定顯示
+        this.subtitleContainer.classList.remove('voice-translator-pulse');
+        this.subtitleContainer.style.animation = 'none';
 
         // Rebind close button event
         const closeButton = this.subtitleContainer.querySelector('button');
@@ -555,18 +706,8 @@ class VoiceTranslatorContent {
 
         this.subtitleContainer.style.display = 'block';
         
-        // Auto hide translation results after 4 seconds, then show listening indicator again
-        if (!isSystemMessage) {
-        setTimeout(() => {
-            if (this.subtitleContainer.style.display === 'block') {
-                this.hideSubtitle();
-                    // Show listening indicator again if still listening
-                    if (this.isListening && this.listeningIndicator) {
-                        this.listeningIndicator.style.display = 'block';
-                    }
-                }
-            }, 4000);
-        }
+        // 移除自動隱藏功能，讓用戶手動控制
+        // 字幕會持續顯示直到用戶關閉或有新翻譯
     }
 
     showStatus(message) {
@@ -635,17 +776,33 @@ class VoiceTranslatorContent {
     }
 }
 
-// Initialize content script
-console.log('🎤🎤🎤 Voice Translator Content Script loaded - Version 1.0 🎤🎤🎤');
-console.log('🎤 Current URL:', window.location.href);
-console.log('🎤 Document ready state:', document.readyState);
-const contentInstance = new VoiceTranslatorContent();
-console.log('🎤🎤🎤 Content script initialized successfully 🎤🎤🎤');
+// Initialize content script - prevent duplicate initialization
+if (!window.voiceTranslatorInitialized) {
+    console.log('🎤🎤🎤 Voice Translator Content Script loaded - Version 1.0 🎤🎤🎤');
+    console.log('🎤 Current URL:', window.location.href);
+    console.log('🎤 Document ready state:', document.readyState);
+    
+    // Clean up any existing subtitle containers before creating new instance
+    const existingContainer = document.getElementById('voice-translator-subtitle');
+    if (existingContainer) {
+        console.log('🎤 Removing existing subtitle container');
+        existingContainer.remove();
+    }
+    
+    const contentInstance = new VoiceTranslatorContent();
+    window.voiceTranslatorInstance = contentInstance;
+    window.voiceTranslatorInitialized = true;
+    console.log('🎤🎤🎤 Content script initialized successfully 🎤🎤🎤');
+} else {
+    console.log('🎤 Voice Translator already initialized, skipping...');
+}
 
 // Add a test function to window for debugging
 window.testVoiceTranslator = () => {
     console.log('🎤 Test function called - Content script is working!');
-    contentInstance.showStatus('🧪 Test message from content script');
+    if (window.voiceTranslatorInstance) {
+        window.voiceTranslatorInstance.showStatus('🧪 Test message from content script');
+    }
     return 'Content script is active';
 };
 

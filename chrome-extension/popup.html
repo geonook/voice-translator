@@ -86,6 +86,29 @@
                     Show subtitles on webpage
                 </label>
             </div>
+            <div class="toggle-subtitle">
+                <label>
+                    <input type="checkbox" id="enableRealtimeTranslation" checked>
+                    Real-time only mode (optimized for long sentences)
+                </label>
+            </div>
+            <div class="input-group" style="margin-top: 10px;">
+                <label for="realtimeDelay">Real-time delay (ms):</label>
+                <select id="realtimeDelay">
+                    <option value="300">300ms (Very Fast)</option>
+                    <option value="600" selected>600ms (Balanced)</option>
+                    <option value="1000">1000ms (Conservative)</option>
+                    <option value="1500">1500ms (Slow)</option>
+                </select>
+            </div>
+            <div class="input-group" style="margin-top: 10px;">
+                <label for="translationSensitivity">Long sentence handling:</label>
+                <select id="translationSensitivity">
+                    <option value="low">Conservative (Wait for complete thoughts)</option>
+                    <option value="medium" selected>Balanced (Smart segmentation)</option>
+                    <option value="high">Aggressive (Frequent updates for long sentences)</option>
+                </select>
+            </div>
         </div>
     </div>
 
